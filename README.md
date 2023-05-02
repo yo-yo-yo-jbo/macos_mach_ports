@@ -206,3 +206,9 @@ jbo@McJbo ~ % ./mach_demo 42 Muhaha
 jbo@McJbo mach_fun %
 ```
 
+Now, for a few notes:
+1. In `receive_routine` we create a new `Mach Port` and assign it with `Send Rights`, followed by registering it with the `Bootstrap Port`. Note the global variable `bootstrap_port` there. Also note that without the `Send Rights`, there would be no way of registering the Port.
+2. We use the `mach_msg` API to receive messages and send them; the 2nd argument indicates the direction (`MACH_SEND_MSG` is for sending, `MACH_RCV_MSG` is for receiving).
+3. The messages must start with a `mach_msg_header_t` header, which is set when sending a message. Receiving also requires a `mach_msg_trailer_t` trailer space.
+4. There are many ways to send messages - `MACH_MSG_TYPE_COPY_SEND` means that the data is serialized and copied, but there are other ways to transfer data as well (such as shared memory, for instance).
+5. We had to set the `-Wno-deprecated` flag to GCC since `bootstrap_register` is deprecated by `bootstrap_register2`, which expects another flags argument.
