@@ -205,7 +205,7 @@ jbo@McJbo ~ % ./mach_demo 42 Muhaha
 [+] Starting sender.
 [+] Got message, some_number=42, some_string=Muhaha
 [1]  + done       ./mach_demo
-jbo@McJbo mach_fun %
+jbo@McJbo ~ %
 ```
 
 Now, for a few notes:
