@@ -212,3 +212,10 @@ Now, for a few notes:
 3. The messages must start with a `mach_msg_header_t` header, which is set when sending a message. Receiving also requires a `mach_msg_trailer_t` trailer space.
 4. There are many ways to send messages - `MACH_MSG_TYPE_COPY_SEND` means that the data is serialized and copied, but there are other ways to transfer data as well (such as shared memory, for instance).
 5. We had to set the `-Wno-deprecated` flag to GCC since `bootstrap_register` is deprecated by `bootstrap_register2`, which expects another flags argument.
+
+At a high-level, the receiving routine creates a new port (that it owns), registers it with the Bootstrap Server and waits for a message.  
+The sending routine looks up that port by the registered name and then sends it a message.
+
+## Mach Ports and security
+Note that there is no security enforcement - once someone has Rights to the port, it's "all or nothing". This is quite a powerful concept for attackers, but raises the question on the proper way of using Mach Ports. Well, besides serializing messages, Mach Ports can send other rights over an existing Mach Port!  
+Therefore, the proper way of enforcing security is by exposing Mach Ports (e.g. with the Bootstrap Server), receiving requests and responding with new Send Rights when appropriate.  
