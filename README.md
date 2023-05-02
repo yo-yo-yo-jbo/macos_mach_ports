@@ -9,7 +9,7 @@ There are other mechanisms we haven't touched (`TCC`, for instance) but today I'
 As you might have known, the macOS Kernel is some sort of a fusion between BSD and Mach, which leads to many interesting differences in APIs and even terminology sometimes (e.g. `tasks` vs. `processes`).  
 You might know several "traditional" `Inter-process communication (IPC)` mechanisms, such as `pipes`, `sockets`, `shared memory` and so on... Well, `Mach` has `Mach Ports`. Those are the building blocks of more higher-level IPC mechanisms (e.g. `MIG`, `XPC`).
 
-This blogpost is based on a great writeup [here](https://docs.darlinghq.org/internals/macos-specifics/mach-ports.html), with some of my experience.
+This blogpost is based on some great resources (see [here](https://ddeville.me/2015/02/interprocess-communication-on-ios-with-mach-messages/) and [here](https://docs.darlinghq.org/internals/macos-specifics/mach-ports.html)), with some of my experience.
 
 ## Port Rights and the Bootstrap Port
 Mach Ports are (kind of) equivalent to one-directional pipes. Tasks and the kernel can enqueue and dequeue messages via a *port right*.  
