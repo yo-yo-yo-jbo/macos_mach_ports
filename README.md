@@ -30,3 +30,179 @@ Just like a DNS server, it maps ports to reverse-DNS notation, so your port can 
 To communicate with the `Bootstrap Port`, you can either use the `task_get_special_port` API (with the `TASK_BOOTSTRAP_PORT` constant) or refer to a global variable `bootstrap_port`.
 
 With that in mind, here is an example of how to receive and send data:
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <mach/mach.h>
+#include <servers/bootstrap.h>
+
+#define CLOSE_PORT(port)                do                                                        \
+                                        {                                                         \
+                                            if (MACH_PORT_NULL != (port))                         \
+                                            {                                                     \
+                                                mach_port_deallocate(mach_task_self(), port);     \
+                                                (port) = MACH_PORT_NULL;                          \
+                                            }                                                     \
+                                        } while (false)
+
+#define REGISTERED_NAME ("com.jbo.poc")
+
+typedef struct
+{
+    mach_msg_header_t header;
+    int some_number;
+    char some_string[10];
+} custom_message_t;
+
+typedef struct
+{
+    custom_message_t body;
+    mach_msg_trailer_t trailer;
+} custom_message_recv_t;
+
+static
+bool
+send_routine(
+    int number,
+    char* text
+)
+{
+    bool result = false;
+    mach_port_t port = MACH_PORT_NULL;
+    kern_return_t kr = KERN_SUCCESS;
+    custom_message_t msg = { 0 };
+
+    // Lookup the port from the bootstrap server
+    kr = bootstrap_look_up(bootstrap_port, REGISTERED_NAME, &port);
+    if (KERN_SUCCESS != kr)
+    {
+        printf("[!] bootstrap_look_up() failed: 0x%.8x\n", kr);
+        goto cleanup;
+    }
+
+    // Construct the message header
+    msg.header.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_COPY_SEND, 0);
+    msg.header.msgh_remote_port = port;
+    msg.header.msgh_local_port = MACH_PORT_NULL;
+
+    // Construct the contents
+    msg.some_number = number;
+    strncpy(msg.some_string, text, sizeof(msg.some_string));
+
+    // Send the message
+    kr = mach_msg(&(msg.header), MACH_SEND_MSG, sizeof(msg), 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+    if (KERN_SUCCESS != kr)
+    {
+        printf("[!] mach_msg() failed: 0x%.8x\n", kr);
+        goto cleanup;
+    }
+
+    // Success
+    result = true;
+
+cleanup:
+
+    // Free resources
+    CLOSE_PORT(port);
+
+    // Return result
+    return result;
+}
+
+static
+bool
+receive_routine(void)
+{
+    bool result = false;
+    mach_port_t port = MACH_PORT_NULL;
+    kern_return_t kr = KERN_SUCCESS;
+    custom_message_recv_t msg = { 0 };
+
+    // Create a new port
+    kr = mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &port);
+    if (KERN_SUCCESS != kr)
+    {
+        printf("[!] mach_port_allocate() failed: 0x%.8x\n", kr);
+        goto cleanup;
+    }
+
+    // Add send rights
+    kr = mach_port_insert_right(mach_task_self(), port, port, MACH_MSG_TYPE_MAKE_SEND);
+    if (KERN_SUCCESS != kr)
+    {
+        printf("[!] mach_port_insert_right() failed: 0x%.8x\n", kr);
+        goto cleanup;
+    }
+
+    // Register the port with the bootstrap server
+    kr = bootstrap_register(bootstrap_port, REGISTERED_NAME, port);
+    if (KERN_SUCCESS != kr)
+    {
+        printf("[!] bootstrap_register() failed: 0x%.8x\n", kr);
+        goto cleanup;
+    }
+
+    // Wait for a message
+    printf("[+] Waiting for a message.\n");
+    kr = mach_msg(&(msg.body.header), MACH_RCV_MSG, 0, sizeof(msg), port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+    if (KERN_SUCCESS != kr)
+    {
+        printf("[!] mach_msg() failed: 0x%.8x\n", kr);
+        goto cleanup;
+    }
+
+    // Print the message fields
+    printf("[+] Got message, some_number=%d, some_string=%s\n", msg.body.some_number, msg.body.some_string);
+    
+    // Success
+    result = true;
+
+cleanup:
+
+    // Free resources
+    CLOSE_PORT(port);
+
+    // Return result
+    return result;
+}
+
+int
+main(
+    int argc,
+    char** argv
+)
+{
+    bool result = false;
+
+    // Handle receiver
+    if (argc < 3)
+    {
+        printf("[+] Starting receiver.\n");
+        result = receive_routine(); 
+    }
+    else
+    {
+        printf("[+] Starting sender.\n");
+        result = send_routine(atoi(argv[1]), argv[2]);
+    }
+
+    // Indicate result
+    return result ? 0 : -1;
+}
+```
+
+This will either run a receiver or a sender, based on the number of arguments. Here's a demonstration:
+```shell
+jbo@McJbo ~ % gcc -Wno-deprecated -omach_demo ./mach_demo.c
+jbo@McJbo ~ % ./mach_demo &
+[1] 40558
+jbo@McJbo ~ % [+] Starting receiver.
+[+] Waiting for a message.
+
+jbo@McJbo ~ % ./mach_demo 42 Muhaha
+[+] Starting sender.
+[+] Got message, some_number=42, some_string=Muhaha
+[1]  + done       ./mach_demo
+jbo@McJbo mach_fun %
+```
+
