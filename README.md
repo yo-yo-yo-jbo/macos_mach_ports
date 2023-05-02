@@ -228,3 +228,12 @@ If you recall, I mentioned that Mach Ports are not conserved after `fork` (and `
 - `Host Port`: represents a Mach Port owned by the kernel, can relay information about the kernel version and host machine.
 - `Debug Control Port`: used for debugging purposes.
 - `Task Port`: represents the task, as we mentioned. It's owned by the kernel, and for each task can be retrieved with `mach_task_self()`. It obviously changes after `fork` - with the newly process `Task Port`, but does not change under `execve`.
+
+These special ports can be acquired with `task_get_special_port`, for example:
+```c
+mach_port_t port = MACH_PORT_NULL;
+kern_return_t kr = KERN_SUCCESS;
+kr = task_get_special_port(mach_task_self(), TASK_BOOTSTRAP_PORT, &port);
+```
+
+Interestingly, there is also a `task_set_special_port` which is quite useful. For instance, if you'd like to run a process and make it thing that it runs under a different kernel, you could just call `task_set_special_port` to change the `Host Port` and manipulate the responses as you see fit!
