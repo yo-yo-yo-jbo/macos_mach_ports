@@ -9,6 +9,8 @@ There are other mechanisms we haven't touched (`TCC`, for instance) but today I'
 As you might have known, the macOS Kernel is some sort of a fusion between BSD and Mach, which leads to many interesting differences in APIs and even terminology sometimes (e.g. `tasks` vs. `processes`).  
 You might know several "traditional" `Inter-process communication (IPC)` mechanisms, such as `pipes`, `sockets`, `shared memory` and so on... Well, `Mach` has `Mach Ports`. Those are the building blocks of more higher-level IPC mechanisms (e.g. `MIG`, `XPC`).
 
+This blogpost is based on a great writeup [here](https://docs.darlinghq.org/internals/macos-specifics/mach-ports.html), with some of my experience.
+
 ## Port Rights and the Bootstrap Port
 Mach Ports are (kind of) equivalent to one-directional pipes. Tasks and the kernel can enqueue and dequeue messages via a *port right*.  
 Each Mach Port can have one `Receiver` and multiple `Senders`, hence there are several types of `Port Rights`:
@@ -220,3 +222,9 @@ The sending routine looks up that port by the registered name and then sends it 
 Note that there is no security enforcement - once someone has Rights to the port, it's "all or nothing". This is quite a powerful concept for attackers, but raises the question on the proper way of using Mach Ports. Well, besides serializing messages, Mach Ports can send other rights over an existing Mach Port!  
 Therefore, the proper way of enforcing security is by exposing Mach Ports (e.g. with the Bootstrap Server), receiving requests and responding with new Send Rights when appropriate. In fact, this is how registration with the Bootstrap Server works, and why it's necesasary to add Send Rights before registering.  
 Additionally, things like `thread_create` and `vm_write` (that can be used for injection, for instance) also work under the same principal - for each process there is a port called a `Task Port`. Having Send Rights to that Task Port means we can do these operations!
+
+If you recall, I mentioned that Mach Ports are not conserved after `fork` (and `execve`, actually). This is true *besides* some special ports (obviously the Bootstrap Port has to be known to start exchanging Port Rights!):
+- `Bootstrap Port`: represents the Mach Port to the Bootstrap Server, which, under macOS, lives under `launchd`.
+- `Host Port`: represents a Mach Port owned by the kernel, can relay information about the kernel version and host machine.
+- `Debug Control Port`: used for debugging purposes.
+- `Task Port`: represents the task, as we mentioned. It's owned by the kernel, and for each task can be retrieved with `mach_task_self()`. It obviously changes after `fork` - with the newly process `Task Port`, but does not change under `execve`.
