@@ -218,4 +218,5 @@ The sending routine looks up that port by the registered name and then sends it 
 
 ## Mach Ports and security
 Note that there is no security enforcement - once someone has Rights to the port, it's "all or nothing". This is quite a powerful concept for attackers, but raises the question on the proper way of using Mach Ports. Well, besides serializing messages, Mach Ports can send other rights over an existing Mach Port!  
-Therefore, the proper way of enforcing security is by exposing Mach Ports (e.g. with the Bootstrap Server), receiving requests and responding with new Send Rights when appropriate.  
+Therefore, the proper way of enforcing security is by exposing Mach Ports (e.g. with the Bootstrap Server), receiving requests and responding with new Send Rights when appropriate. In fact, this is how registration with the Bootstrap Server works, and why it's necesasary to add Send Rights before registering.  
+Additionally, things like `thread_create` and `vm_write` (that can be used for injection, for instance) also work under the same principal - for each process there is a port called a `Task Port`. Having Send Rights to that Task Port means we can do these operations!
