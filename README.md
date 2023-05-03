@@ -240,6 +240,8 @@ Interestingly, there is also a `task_set_special_port` which is quite useful. Fo
 
 In fact, a similar technique was used by [Samuel Groß](https://twitter.com/5aelo) to get a local elevation of privilege vulnerability; by setting the `Bootstrap Port` to a controlled port and running a `Set-UID` binary, that `Set-UID` binary thinks it talks to the `Bootstrap Port`, while in fact it talks to our own controlled port. Apple has since fixed the bug; but feel free to read about CVE-2018-14042.
 
+As an exercise, I coded a tiny project called `Bootstrap Snoop` that does exactly that - you are welcome to check it out [here](https://github.com/yo-yo-yo-jbo/bootstrap_snoop/).
+
 ## Into the future
 Most macOS Apps do not use Mach Ports directly; instead, Mach Ports are used as the low-level IPC mechanism for more advanced IPCs (`MIG`, `XPC`) that use Mach Ports serialization quite heavily. However, Mach Ports might still be useful for many interesting security issues, and thus definitely worth your time!
 
