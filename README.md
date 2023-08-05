@@ -238,7 +238,7 @@ kr = task_get_special_port(mach_task_self(), TASK_BOOTSTRAP_PORT, &port);
 
 Interestingly, there is also a `task_set_special_port` which is quite useful. For instance, if you'd like to run a process and make it thing that it runs under a different kernel, you could just call `task_set_special_port` to change the `Host Port` and manipulate the responses as you see fit!
 
-In fact, a similar technique was used by [Samuel Groß](https://twitter.com/5aelo) to get a local elevation of privilege vulnerability; by setting the `Bootstrap Port` to a controlled port and running a `Set-UID` binary, that `Set-UID` binary thinks it talks to the `Bootstrap Port`, while in fact it talks to our own controlled port. Apple has since fixed the bug; but feel free to read about CVE-2018-14042.
+In fact, a similar technique was used by [Samuel Groß](https://twitter.com/5aelo) to get a local elevation of privilege vulnerability; by setting the `Bootstrap Port` to a controlled port and running a `Set-UID` binary, that `Set-UID` binary thinks it talks to the `Bootstrap Port`, while in fact it talks to our own controlled port. Apple has since fixed the bug; but feel free to read about CVE-2018-4237.
 
 As an exercise, I coded a tiny project called `Bootstrap Snoop` that does exactly that - you are welcome to check it out [here](https://github.com/yo-yo-yo-jbo/bootstrap_snoop/).
 
