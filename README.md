@@ -247,4 +247,4 @@ Most macOS Apps do not use Mach Ports directly; instead, Mach Ports are used as 
 
 Stay tuned!
 
-Jonathan Bar Or
+Jonathan Bar Or (https://jonathanbaror.com)
